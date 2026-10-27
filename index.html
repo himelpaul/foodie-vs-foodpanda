@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Foodie — Why we lose on price, and what to do instead</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#121D1A; --ink-2:#2C3A36; --paper:#EFF1EC; --card:#FFFFFF; --line:#D6DBD3;
+  --accent:#E09612; --accent-ink:#2A1C00; --alarm:#BD3C24; --alarm-soft:#FBEAE6;
+  --good:#1B6B4F; --good-soft:#E3F1EB; --muted:#6B7872;
+  color-scheme:light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font-family:"Instrument Sans",system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.5}
+h1,h2,h3{font-family:"Bricolage Grotesque","Instrument Sans",sans-serif;margin:0}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+.topbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;
+  padding:16px 24px;border-bottom:1px solid var(--line);background:var(--card)}
+.brand{display:flex;align-items:baseline;gap:10px}
+.mark{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:21px;letter-spacing:-.02em}
+.mark span{color:var(--accent)}
+.sub{font-size:13px;color:var(--muted)}
+.tabs{display:flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--paper)}
+.tabs button{padding:7px 15px;border-radius:999px;font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+
+.wrap{max-width:1140px;margin:0 auto;padding:34px 24px 64px}
+@media (max-width:900px){.wrap{padding:24px 16px 56px}}
+.hide{display:none}
+
+.lead{max-width:60ch}
+.lead h1{font-size:30px;letter-spacing:-.028em;line-height:1.16}
+@media (max-width:600px){.lead h1{font-size:24px}}
+.lead p{color:var(--ink-2);margin:14px 0 0}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px}
+.card h3{font-size:18px;letter-spacing:-.015em}
+.card .hint{font-size:13.5px;color:var(--muted);margin-top:6px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:26px;margin-top:26px}
+@media (max-width:860px){.two{grid-template-columns:1fr;gap:18px}}
+
+/* ---- economics ---- */
+.dial{margin-top:20px}
+.dial label{font-size:13.5px;color:var(--ink-2);display:block}
+input[type=range]{width:100%;accent-color:var(--accent);margin:12px 0 2px}
+.scale{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.readout{margin-top:20px;border-top:1px solid var(--line);padding-top:18px}
+.bignum{font-family:"Bricolage Grotesque",sans-serif;font-size:46px;font-weight:800;
+  letter-spacing:-.035em;line-height:1;font-variant-numeric:tabular-nums}
+.bigcap{font-size:13.5px;color:var(--muted);margin-top:7px;max-width:36ch}
+.bars{margin-top:22px;display:grid;gap:12px}
+.bar{display:grid;grid-template-columns:116px minmax(0,1fr);gap:12px;align-items:center}
+.bar .who{font-size:13px;color:var(--ink-2)}
+.bar .track{height:30px;background:var(--paper);border-radius:8px;position:relative;overflow:hidden}
+.bar .fill{height:100%;border-radius:8px;transition:width .22s ease}
+.bar .fill.us{background:var(--alarm)} .bar .fill.them{background:var(--good)}
+.bar .val{position:absolute;top:0;left:11px;height:100%;display:flex;align-items:center;
+  font-size:13px;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
+.verdict{margin-top:20px;border-radius:14px;padding:14px 16px;font-size:14px;line-height:1.5}
+.verdict.bad{background:var(--alarm-soft);color:var(--alarm)}
+.verdict.ok{background:var(--good-soft);color:var(--good)}
+.verdict b{font-weight:700}
+
+.ladder{margin-top:20px;display:grid;gap:1px;background:var(--line);border:1px solid var(--line);
+  border-radius:14px;overflow:hidden}
+.rung{background:var(--card);padding:14px 16px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start}
+.rung .n{width:24px;height:24px;border-radius:7px;background:var(--paper);display:grid;place-items:center;
+  font-size:12.5px;font-weight:700;color:var(--ink-2);flex:none}
+.rung.no .n{background:var(--alarm-soft);color:var(--alarm)}
+.rung.yes .n{background:var(--good-soft);color:var(--good)}
+.rung .h{font-weight:600;font-size:14.5px}
+.rung .d{font-size:13.5px;color:var(--muted);margin-top:3px;max-width:52ch}
+
+.checks{margin-top:26px}
+.checks h3{font-size:18px;letter-spacing:-.015em}
+.checks ul{margin:12px 0 0;padding-left:18px;color:var(--ink-2);font-size:14.5px}
+.checks li{margin:7px 0;max-width:64ch}
+.foot{margin-top:26px;padding-top:18px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);max-width:64ch}
+
+/* ---- fix: flywheel + phases ---- */
+.wheelwrap{margin-top:24px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px}
+.wheelwrap svg{width:100%;height:auto;max-width:660px;display:block;margin:6px auto 0}
+.capt{text-align:center;font-size:13px;color:var(--muted);margin-top:10px;max-width:62ch;margin-left:auto;margin-right:auto}
+
+.phases{margin-top:26px;display:grid;gap:14px}
+.phase{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;
+  display:grid;grid-template-columns:140px minmax(0,1fr);gap:18px}
+@media (max-width:700px){.phase{grid-template-columns:1fr;gap:10px}}
+.phase .when{font-size:13px;color:var(--muted)}
+.phase .tag{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+  padding:3px 9px;border-radius:999px;background:var(--paper);color:var(--ink-2);margin-bottom:7px}
+.phase.v .tag{background:var(--alarm-soft);color:var(--alarm)}
+.phase h4{font-family:"Bricolage Grotesque",sans-serif;font-size:17px;font-weight:700;margin:0 0 7px;letter-spacing:-.015em}
+.phase p{margin:0;font-size:14.5px;color:var(--ink-2);max-width:62ch}
+.kv{display:grid;gap:7px;margin-top:12px}
+.kv div{display:grid;grid-template-columns:116px minmax(0,1fr);gap:10px;font-size:13.5px}
+.kv dt{color:var(--muted)}
+.kv b{font-weight:600;color:var(--ink-2)}
+.kv .stop b{color:var(--alarm)}
+
+.mtable{margin-top:26px;background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.mrow{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;padding:14px 20px;font-size:14px}
+.mrow + .mrow{border-top:1px solid var(--line)}
+.mrow .lab{color:var(--muted);font-size:13px}
+.mrow .val b{font-weight:600}
+.mrow .val span{color:var(--muted);display:block;font-size:13.5px;margin-top:2px}
+
+/* ---- phone ---- */
+.proto{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:40px}
+@media (max-width:900px){.proto{grid-template-columns:1fr;gap:26px}}
+.phone{width:100%;max-width:380px;margin:0 auto;aspect-ratio:380/720;background:var(--card);
+  border:1px solid var(--line);border-radius:30px;box-shadow:0 18px 50px -24px rgba(0,0,0,.4);
+  display:flex;flex-direction:column;overflow:hidden}
+.statusbar{display:flex;justify-content:space-between;padding:12px 20px 4px;font-size:11.5px;color:var(--muted)}
+.appbar{display:flex;align-items:center;gap:10px;padding:8px 18px 12px;border-bottom:1px solid var(--line)}
+.appbar .back{font-size:19px;color:var(--muted);padding:2px 4px}
+.appbar h2{font-size:16px;font-weight:700;letter-spacing:-.01em}
+.appbar .loc{font-size:12px;color:var(--muted);margin-top:1px}
+.screen{flex:1;overflow-y:auto;padding:16px 18px 20px}
+.screen::-webkit-scrollbar{width:0}
+.rcard{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);width:100%;text-align:left;align-items:center}
+.thumb{width:50px;height:50px;border-radius:12px;flex:none;display:grid;place-items:center;font-size:22px;background:var(--paper)}
+.rcard .nm{font-weight:600;font-size:14.5px}
+.rcard .mt{font-size:12.5px;color:var(--muted);margin-top:2px}
+.rcard .pr{margin-left:auto;text-align:right;flex:none}
+.pr .big{font-weight:700;font-size:14.5px;font-variant-numeric:tabular-nums}
+.pr .tag2{font-size:10.5px;margin-top:2px;white-space:nowrap}
+.tag2.good{color:var(--good)} .tag2.fine{color:var(--muted)}
+.item{display:flex;gap:12px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item .nm{font-weight:600;font-size:14.5px}
+.item .ds{font-size:12.5px;color:var(--muted);margin-top:1px}
+.stepper{display:flex;align-items:center;gap:2px;border:1px solid var(--line);border-radius:999px;margin-left:auto;flex:none}
+.stepper button{width:28px;height:28px;display:grid;place-items:center;font-size:15px;color:var(--ink-2);border-radius:999px}
+.stepper .q{min-width:20px;text-align:center;font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.rows{margin-top:6px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:13.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.row.total{border-top:1px solid var(--line);margin-top:8px;padding-top:12px;font-size:16px;font-weight:700;
+  color:var(--ink);font-family:"Bricolage Grotesque",sans-serif}
+.row .strike{color:var(--muted);text-decoration:line-through;margin-right:6px;font-weight:400}
+.row.saved{color:var(--good)}
+.vs{margin-top:14px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.vs .r{display:flex;justify-content:space-between;padding:11px 14px;font-size:13.5px;font-variant-numeric:tabular-nums}
+.vs .r + .r{border-top:1px solid var(--line)}
+.vs .r.win{background:var(--good-soft);color:var(--good);font-weight:600}
+.vs .r.lose{background:var(--alarm-soft);color:var(--alarm);font-weight:600}
+.banner{border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.45;margin:14px 0 2px}
+.banner.ok{background:var(--good-soft);color:var(--good)}
+.banner.bad{background:var(--alarm-soft);color:var(--alarm)}
+.banner.note{background:var(--paper);color:var(--ink-2);border:1px solid var(--line)}
+.banner b{font-weight:700}
+.cta{display:block;width:100%;padding:14px;border-radius:14px;background:var(--ink);color:var(--paper);
+  font-weight:600;font-size:15px;text-align:center;margin-top:16px}
+.cta.accent{background:var(--accent);color:var(--accent-ink)}
+.cta.ghost{background:none;border:1px solid var(--line);color:var(--ink-2);margin-top:8px;font-weight:500}
+.plusbox{border:1.5px solid var(--accent);border-radius:16px;padding:14px;margin-top:6px}
+.plusbox .hd{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.plusbox .ttl{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;font-size:16px}
+.plusbox .pz{font-size:12.5px;color:var(--muted);margin-top:2px}
+.plusbox ul{margin:11px 0 0;padding-left:17px;font-size:13px;color:var(--ink-2)}
+.plusbox li{margin:4px 0}
+.toggle{width:46px;height:27px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:background .18s}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .18s}
+.toggle[aria-pressed="true"]{background:var(--good)}
+.toggle[aria-pressed="true"]::after{transform:translateX(19px)}
+.breakeven{background:var(--paper);border-radius:14px;padding:13px 14px;font-size:13.5px;color:var(--ink-2);
+  margin-top:14px;font-variant-numeric:tabular-nums}
+.tier{display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--line);
+  border-radius:11px;font-size:13px;margin-top:7px;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.tier.on{border-color:var(--good);background:var(--good-soft);color:var(--good);font-weight:600}
+.tier b{font-weight:600}
+.meter{height:10px;background:var(--paper);border-radius:999px;overflow:hidden;margin-top:12px;border:1px solid var(--line)}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .2s}
+.zonehd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:2px}
+.zonehd .big{font-family:"Bricolage Grotesque",sans-serif;font-size:30px;font-weight:800;
+  letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.zonehd .cap{font-size:12.5px;color:var(--muted)}
+.breakeven .num{font-family:"Bricolage Grotesque",sans-serif;font-size:25px;font-weight:700;color:var(--good);display:block;line-height:1.15}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 22px}
+.panel .kicker{font-size:12.5px;color:var(--accent);font-weight:600}
+.panel h3{font-size:18px;margin:5px 0 9px;letter-spacing:-.015em}
+.panel p{margin:0;color:var(--ink-2);font-size:14.5px;max-width:58ch}
+.panel p + p{margin-top:9px}
+.steps{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 18px}
+.steps button{padding:7px 13px;border:1px solid var(--line);border-radius:999px;font-size:13px;color:var(--muted);font-weight:500}
+.steps button[aria-current="true"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.modeline{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.modeline .lbl{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="mark">food<span>ie</span></div>
+    <div class="sub">Losing customers to a cheaper competitor</div>
+  </div>
+  <div class="tabs" role="group" aria-label="Sections">
+    <button id="t1" aria-pressed="true">1 · Diagnosis</button>
+    <button id="t2" aria-pressed="false">2 · The fix</button>
+    <button id="t3" aria-pressed="false">3 · Prototype</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ========== 1. DIAGNOSIS ========== -->
+<section id="s1">
+  <div class="lead">
+    <h1>Foodpanda is cheaper on almost every basket. The useful question is why.</h1>
+    <p>Both apps reveal fees at checkout, both list the same restaurants, both run coupons. So the gap is not a design choice we can copy — it comes from what a delivery costs each company to complete. That cost is set by how many drops a rider finishes in an hour, which is set by how tightly packed the orders are.</p>
+  </div>
+
+  <div class="two">
+    <div class="card">
+      <h3>What one delivery costs us</h3>
+      <div class="hint">Riders are paid per delivery, and a short in-zone trip is a smaller job than a long one. So as density rises, pay per delivery falls while pay per hour rises — and our cost per delivery falls with it. Both numbers below move together.</div>
+      <div class="dial">
+        <label for="dens">Orders completed per rider-hour</label>
+        <input type="range" id="dens" min="10" max="45" value="16" step="1" aria-label="Orders per rider hour">
+        <div class="scale"><span>1.0 — spread across the city</span><span>4.5 — one dense zone</span></div>
+      </div>
+      <div class="readout" style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+        <div>
+          <div class="bignum" id="cpd">—</div>
+          <div class="bigcap">our cost per delivery</div>
+        </div>
+        <div>
+          <div class="bignum" id="rhr" style="color:var(--good)">—</div>
+          <div class="bigcap">rider earnings per hour</div>
+        </div>
+        <div class="bigcap" id="cpdCap" style="grid-column:1/-1;max-width:46ch"></div>
+      </div>
+      <div class="bars">
+        <div class="bar"><div class="who">Foodie cost</div>
+          <div class="track"><div class="fill us" id="barUs"><span class="val" id="barUsV"></span></div></div></div>
+        <div class="bar"><div class="who">Competitor cost</div>
+          <div class="track"><div class="fill them" style="width:56%"><span class="val">৳53</span></div></div></div>
+      </div>
+      <div class="verdict bad" id="verdict"></div>
+    </div>
+
+    <div class="card">
+      <h3>What this means for strategy</h3>
+      <div class="hint">If the gap is structural, the obvious responses are the losing ones.</div>
+      <div class="ladder">
+        <div class="rung no"><div class="n">✕</div><div>
+          <div class="h">Match their discounts</div>
+          <div class="d">Every taka comes out of our margin, while theirs is partly restaurant-funded and partly absorbed by lower cost. Same race, lost faster.</div></div></div>
+        <div class="rung no"><div class="n">✕</div><div>
+          <div class="h">Cover more of the city</div>
+          <div class="d">Wider coverage spreads the same riders thinner, raising cost per delivery and widening the gap we are trying to close.</div></div></div>
+        <div class="rung yes"><div class="n">1</div><div>
+          <div class="h">Shrink the service area, raise density</div>
+          <div class="d">Two zones served properly instead of eight served badly. Density is the one input we control, and it is what the price gap is made of.</div></div></div>
+        <div class="rung yes"><div class="n">2</div><div>
+          <div class="h">Sell certainty instead of cheapness</div>
+          <div class="d">We cannot promise the lowest price. We can promise one flat fee for the whole zone, published and falling as the zone gets busier — a claim a city-wide competitor cannot easily copy.</div></div></div>
+        <div class="rung yes"><div class="n">3</div><div>
+          <div class="h">Restaurant-funded offers</div>
+          <div class="d">Our lower commission is worth something to a restaurant. Trade it for exclusives and funded discounts, so offers stop coming out of our margin.</div></div></div>
+        <div class="rung yes"><div class="n">4</div><div>
+          <div class="h">A membership, because it feeds density</div>
+          <div class="d">Subscribers order more often inside the same small area, raising drops per rider-hour, which lowers cost, which pays for the membership.</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:26px">
+    <h3>How they actually fit more drops into an hour</h3>
+    <div class="hint">Their advantage is not mapping — both companies use the same third-party maps. It is dispatch, and dispatch only works when orders sit close together.</div>
+    <div class="ladder">
+      <div class="rung yes"><div class="n">1</div><div>
+        <div class="h">The rider is not sent to wait</div>
+        <div class="d">Their system does not assign the nearest rider. It assigns the rider who will arrive at the restaurant roughly when the food is ready, so nobody stands around for ten minutes per order. Idle time is the hidden cost in every delivery.</div></div></div>
+      <div class="rung yes"><div class="n">2</div><div>
+        <div class="h">Two orders, one trip</div>
+        <div class="d">When timing and location line up, one rider carries several deliveries in a single run. Two orders on one trip halves the cost of each.</div></div></div>
+      <div class="rung no"><div class="n">!</div><div>
+        <div class="h">Neither works without density</div>
+        <div class="d">You cannot batch two orders that are six kilometres apart, and you cannot time arrivals precisely when every trip is long. Both techniques are available to us — they simply have nothing to work with until orders are packed close. That is why density comes first and the clever dispatch comes second.</div></div></div>
+    </div>
+  </div>
+
+  <div class="checks">
+    <h3>What I would verify before committing</h3>
+    <ul>
+      <li>Orders completed per rider-hour, by zone, for the last quarter — the number the whole argument rests on.</li>
+      <li>A matched-basket comparison: identical restaurant, identical items, all-in totals on both apps, across several zones.</li>
+      <li><b>The falsifiable test:</b> if density is the cause, the price gap should be <i>wider</i> in our low-density zones and narrower in dense ones. If the gap is flat everywhere, density is not the explanation and this plan should not be built.</li>
+      <li>Who funds the competitor’s coupons — if the same restaurant’s discount appears on both apps, it is restaurant-funded and we can ask for it too.</li>
+    </ul>
+  </div>
+  <div class="foot">Figures are illustrative, chosen to show the mechanism. Real numbers would come from the checks above. Built for Questions 4 and 5, Product Owner Trainee assessment, Brain Station 23.</div>
+</section>
+
+<!-- ========== 2. THE FIX ========== -->
+<section id="s2" class="hide">
+  <div class="lead">
+    <h1>The fix is a loop, not a feature</h1>
+    <p>Each step lowers the cost of the next one. That is why the order matters, and why cutting coverage — which looks like retreat — is the first move rather than the last.</p>
+  </div>
+
+  <div class="wheelwrap">
+    <svg viewBox="0 0 820 650" role="img" aria-label="A circular four-step loop. Cutting coverage from 42 zones to 2 concentrates orders, which raises drops per rider-hour from 1.6 to 3.8, which cuts cost per delivery from 90 to 52 taka, which funds a flat 40 taka fee and a membership, which brings repeat orders back into the same zones.">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0 0 L10 5 L0 10 z" fill="#E09612"/>
+        </marker>
+        <filter id="sh" x="-25%" y="-25%" width="150%" height="150%">
+          <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#121D1A" flood-opacity="0.08"/>
+        </filter>
+      </defs>
+
+      <!-- entry -->
+      <rect x="230" y="6" width="360" height="56" rx="15" fill="#2C3A36" filter="url(#sh)"/>
+      <text x="410" y="28" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="11" font-weight="600" letter-spacing="1.2" fill="#9FB0A8">THE ENTRY MOVE</text>
+      <text x="410" y="50" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-size="17" font-weight="700" fill="#FFFFFF">Cut coverage: 42 zones &#8594; 2</text>
+      <path d="M410 66 L410 96" stroke="#E09612" stroke-width="2.6" fill="none" marker-end="url(#ah)"/>
+
+      <!-- faint guide ring -->
+      <circle cx="410" cy="330" r="190" fill="none" stroke="#E6EAE3" stroke-width="1.5" stroke-dasharray="3 7"/>
+
+      <!-- clockwise arcs -->
+      <path d="M527 180.3 A 190 190 0 0 1 577.8 240.8" stroke="#E09612" stroke-width="2.8" fill="none" marker-end="url(#ah)"/>
+      <path d="M577.8 419.2 A 190 190 0 0 1 527 479.7" stroke="#E09612" stroke-width="2.8" fill="none" marker-end="url(#ah)"/>
+      <path d="M293 479.7 A 190 190 0 0 1 242.2 419.2" stroke="#E09612" stroke-width="2.8" fill="none" marker-end="url(#ah)"/>
+      <path d="M242.2 240.8 A 190 190 0 0 1 293 180.3" stroke="#E09612" stroke-width="2.8" fill="none" marker-end="url(#ah)"/>
+
+      <!-- 1 : top -->
+      <rect x="305" y="102" width="210" height="76" rx="16" fill="#FFFFFF" stroke="#D6DBD3" filter="url(#sh)"/>
+      <circle cx="327" cy="140" r="12" fill="#EFF1EC"/>
+      <text x="327" y="144.5" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="12" font-weight="700" fill="#2C3A36">1</text>
+      <text x="347" y="133" font-family="Instrument Sans, sans-serif" font-size="14" font-weight="600" fill="#121D1A">Orders concentrate</text>
+      <text x="347" y="154" font-family="Instrument Sans, sans-serif" font-size="12.5" fill="#6B7872">short trips, batchable</text>
+
+      <!-- 2 : right -->
+      <rect x="495" y="292" width="210" height="76" rx="16" fill="#FFFFFF" stroke="#D6DBD3" filter="url(#sh)"/>
+      <circle cx="517" cy="330" r="12" fill="#EFF1EC"/>
+      <text x="517" y="334.5" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="12" font-weight="700" fill="#2C3A36">2</text>
+      <text x="537" y="323" font-family="Instrument Sans, sans-serif" font-size="14" font-weight="600" fill="#121D1A">More drops per hour</text>
+      <text x="537" y="345" font-family="Bricolage Grotesque, sans-serif" font-size="15" font-weight="700" fill="#1B6B4F">1.6 &#8594; 3.8</text>
+
+      <!-- 3 : bottom -->
+      <rect x="305" y="482" width="210" height="76" rx="16" fill="#FFFFFF" stroke="#D6DBD3" filter="url(#sh)"/>
+      <circle cx="327" cy="520" r="12" fill="#E3F1EB"/>
+      <text x="327" y="524.5" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="12" font-weight="700" fill="#1B6B4F">3</text>
+      <text x="347" y="513" font-family="Instrument Sans, sans-serif" font-size="14" font-weight="600" fill="#121D1A">Cost per delivery falls</text>
+      <text x="347" y="535" font-family="Bricolage Grotesque, sans-serif" font-size="15" font-weight="700" fill="#1B6B4F">&#2547;90 &#8594; &#2547;52</text>
+
+      <!-- 4 : left -->
+      <rect x="115" y="292" width="210" height="76" rx="16" fill="#FFFFFF" stroke="#E09612" stroke-width="1.6" filter="url(#sh)"/>
+      <circle cx="137" cy="330" r="12" fill="#FBEFD8"/>
+      <text x="137" y="334.5" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="12" font-weight="700" fill="#A06A08">4</text>
+      <text x="157" y="323" font-family="Instrument Sans, sans-serif" font-size="14" font-weight="600" fill="#121D1A">&#2547;60 &#8594; &#2547;40 by tier</text>
+      <text x="157" y="344" font-family="Instrument Sans, sans-serif" font-size="12.5" fill="#6B7872">members reorder</text>
+
+      <!-- hub -->
+      <circle cx="410" cy="330" r="70" fill="#EFF1EC" stroke="#D6DBD3"/>
+      <text x="410" y="322" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-size="18" font-weight="800" letter-spacing="0.5" fill="#121D1A">DENSITY</text>
+      <text x="410" y="342" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="11.5" fill="#6B7872">the one lever</text>
+      <text x="410" y="358" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="11.5" fill="#6B7872">we control</text>
+
+      <!-- corner captions -->
+      <text x="587" y="153" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="12" fill="#A08047">less idle time</text>
+      <text x="587" y="507" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="12" fill="#A08047">fuel and time saved</text>
+      <text x="233" y="507" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="12" fill="#A08047">saving handed back</text>
+      <text x="233" y="153" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="12" fill="#A08047">loop closes</text>
+
+      <!-- rider note -->
+      <rect x="90" y="582" width="640" height="46" rx="13" fill="#E3F1EB"/>
+      <text x="410" y="610" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="13" fill="#1B6B4F">Riders earn &#2547;132/hr before and &#2547;184/hr after &#8212; the saving comes from deleted distance, not their pay.</text>
+    </svg>
+    <p class="capt">Discounting attacks the symptom and spends our own margin. Density attacks the cause and pays for itself, which is why it is the only version of “be cheaper” we can actually sustain.</p>
+  </div>
+
+  <div class="phases">
+    <div class="phase v">
+      <div><span class="tag">Before anything</span><div class="when">Week 1–2</div></div>
+      <div><h4>Prove or kill the hypothesis</h4>
+        <p>Pull drops per rider-hour by zone, run the matched-basket comparison across dense and thin zones, and find out who funds the competitor’s coupons. Nothing below gets built until this returns.</p>
+        <div class="kv">
+          <div><dt>Success</dt><b>Price gap is measurably wider in low-density zones</b></div>
+          <div class="stop"><dt>Stop if</dt><b>The gap is flat across zones — then density is not the cause and this plan is wrong</b></div>
+        </div></div>
+    </div>
+
+    <div class="phase">
+      <div><span class="tag">Phase 1</span><div class="when">Week 3–6</div></div>
+      <div><h4>Cut to two adjacent zones, flat ৳40 delivery</h4>
+        <p>Delist restaurants outside Dhanmondi and Lalmatia. Replace distance-based delivery and the platform fee with one flat zone fee on a published tier — ৳60 at today’s density, falling to ৳40 as the zone fills. Coverage shrinks on purpose; the promise becomes predictability rather than range.</p>
+        <div class="kv">
+          <div><dt>Ships</dt><b>Zone filter, flat fee, platform fee removed, all-in price on every listing</b></div>
+          <div><dt>Success</dt><b>Drops per rider-hour above 2.8 by week 6</b></div>
+          <div class="stop"><dt>Stop if</dt><b>Total orders fall more than 35% and do not recover by week 6</b></div>
+        </div></div>
+    </div>
+
+    <div class="phase">
+      <div><span class="tag">Phase 2</span><div class="when">Week 5–10</div></div>
+      <div><h4>Trade commission for restaurant-funded offers</h4>
+        <p>Approach the top twenty restaurants in both zones with a lower commission in exchange for exclusivity or a funded discount. Offers then come from restaurant marketing budgets instead of ours.</p>
+        <div class="kv">
+          <div><dt>Ships</dt><b>Exclusive badge, funded-offer slots on the home screen</b></div>
+          <div><dt>Success</dt><b>Half of live offers are restaurant-funded</b></div>
+          <div class="stop"><dt>Stop if</dt><b>Fewer than five restaurants accept — the commission advantage is not worth what we assumed</b></div>
+        </div></div>
+    </div>
+
+    <div class="phase">
+      <div><span class="tag">Phase 3</span><div class="when">Week 8–16</div></div>
+      <div><h4>Launch Foodie Plus</h4>
+        <p>৳149 a month, delivery free in-zone. Launched only after Phase 1 shows the cost per delivery actually fell, because the membership is funded by that fall rather than by the subscription fee alone.</p>
+        <div class="kv">
+          <div><dt>Ships</dt><b>Membership, in-cart break-even calculator, priority at peak hours</b></div>
+          <div><dt>Success</dt><b>Members order at least twice the frequency of non-members</b></div>
+          <div class="stop"><dt>Stop if</dt><b>Members order fewer than 4 times a month — the membership then costs us money instead of building density</b></div>
+        </div></div>
+    </div>
+
+    <div class="phase">
+      <div><span class="tag">Phase 4</span><div class="when">Month 5 onward</div></div>
+      <div><h4>Expand one zone at a time, gated on density</h4>
+        <p>A third zone opens only when the first two hold above target drops per rider-hour. Expansion is earned by density, never by calendar — this is the discipline that keeps the loop from unwinding.</p>
+        <div class="kv">
+          <div><dt>Gate</dt><b>Both existing zones above 3.5 drops per rider-hour for four consecutive weeks</b></div>
+          <div class="stop"><dt>Stop if</dt><b>Adding a zone drops the others below 3.0 — pull back before adding more</b></div>
+        </div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:26px">
+    <h3>Does the rider just work harder for the same money?</h3>
+    <div class="hint">The obvious objection, and the one that would kill this plan if the answer were yes. It is not — but only if the pay model is built correctly from the start.</div>
+    <div class="ladder">
+      <div class="rung no"><div class="n">✕</div><div>
+        <div class="h">What we must not do: keep hourly pay flat</div>
+        <div class="d">Holding rider pay flat while drops rise from 1.6 to 4.0 means the entire saving is taken out of the rider’s effort. That is not a cost improvement, it is a wage cut wearing a disguise.</div></div></div>
+      <div class="rung yes"><div class="n">✓</div><div>
+        <div class="h">What we do: pay per delivery, and the trip itself gets shorter</div>
+        <div class="d">A sparse delivery is 6 km and 35 minutes; an in-zone one is 1.5 km and 15 minutes. Those are genuinely different jobs. At ৳82 for the long trip a rider earns ৳132 an hour. At ৳46 for the short one they earn ৳184 an hour — more money, less fuel, less fatigue.</div></div></div>
+      <div class="rung yes"><div class="n">=</div><div>
+        <div class="h">The saving is created, not extracted</div>
+        <div class="d">Deleted distance and deleted idle time are new value that did not exist before. Rider pay per hour rises about 40% and our cost per delivery still falls from ৳90 to ৳52 — both sides take a share of what density created, and neither pays for the other.</div></div></div>
+      <div class="rung no"><div class="n">!</div><div>
+        <div class="h">The guardrail that enforces it</div>
+        <div class="d">Rider earnings per hour is tracked as a release guardrail alongside delivery time. If cost per delivery falls while rider hourly earnings do not rise, the plan is being implemented wrongly and stops — regardless of how good the unit economics look.</div></div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:26px">
+    <h3>Why the membership is the engine, not a perk</h3>
+    <div class="hint">Foodie Plus is the only part of the plan that feeds the loop back into itself, which is why it ships last and matters most.</div>
+    <div class="ladder">
+      <div class="rung yes"><div class="n">৳</div><div>
+        <div class="h">৳149 a month, delivery free inside your zone</div>
+        <div class="d">It saves ৳40 on every order, so it pays for itself on the fourth order of the month. The cart shows that arithmetic against the customer’s own ordering frequency instead of claiming it.</div></div></div>
+      <div class="rung yes"><div class="n">↻</div><div>
+        <div class="h">A member orders more often, in the same small area</div>
+        <div class="d">That is the point. Each extra order lands inside the two zones we already serve, so it adds density rather than spreading us thinner — and density is what lowers cost per delivery.</div></div></div>
+      <div class="rung yes"><div class="n">=</div><div>
+        <div class="h">The lower cost is what pays for the free delivery</div>
+        <div class="d">We are not giving delivery away out of margin. Members create the density that makes delivery cheap, and the saving is handed back to them. That loop is why a competitor cannot simply copy the price.</div></div></div>
+      <div class="rung no"><div class="n">!</div><div>
+        <div class="h">It fails if members do not reorder</div>
+        <div class="d">Below four orders a month, a member costs us more than they bring. That is the stop condition in Phase 3, and it is why the membership launches only after Phase 1 proves cost per delivery actually fell.</div></div></div>
+    </div>
+  </div>
+
+  <div class="checks" style="margin-top:30px">
+    <h3>How we would know it is working</h3>
+    <p style="margin:10px 0 0;color:var(--ink-2);max-width:64ch">One number tells us whether the plan is succeeding. A few more tell us it is succeeding for the reason we claimed. And three must never get worse while we chase the first one.</p>
+  </div>
+
+  <div class="mtable" style="margin-top:16px">
+    <div class="mrow"><div class="lab">North star<span style="display:block;font-size:12px;opacity:.75">the single number</span></div>
+      <div class="val"><b>Drops per rider-hour, by zone</b><span>Every other number in this plan is downstream of it.</span></div></div>
+    <div class="mrow"><div class="lab">Supporting<span style="display:block;font-size:12px;opacity:.75">proves the reason</span></div>
+      <div class="val"><b>All-in total versus competitor on a matched basket · repeat-order rate inside the zone · membership conversion</b></div></div>
+    <div class="mrow"><div class="lab">Guardrails<span style="display:block;font-size:12px;opacity:.75">must not get worse</span></div>
+      <div class="val"><b>Delivery time at the 90th percentile · restaurants available per zone · rider earnings per hour</b>
+        <span>The last one matters: cost per delivery must fall because riders complete more drops, never because riders are paid less per drop.</span></div></div>
+  </div>
+
+  <div class="foot">This is the artefact I would take to a Product Owner — the loop, the order of moves, the metric for each, and the condition under which each one is abandoned.</div>
+</section>
+
+<!-- ========== 3. PROTOTYPE ========== -->
+<section id="s3" class="hide">
+  <div class="modeline">
+    <span class="lbl">Showing</span>
+    <div class="tabs" role="group" aria-label="Prototype mode">
+      <button id="mBefore" aria-pressed="true">Foodie today</button>
+      <button id="mAfter" aria-pressed="false">Zone-first Foodie</button>
+    </div>
+  </div>
+  <div class="proto">
+    <div>
+      <div class="phone">
+        <div class="statusbar"><span>9:41</span><span>Dhaka</span></div>
+        <div class="appbar">
+          <button class="back" id="back" aria-label="Go back" style="display:none">‹</button>
+          <div><h2 id="abTitle"></h2><div class="loc" id="abSub"></div></div>
+        </div>
+        <div class="screen" id="screen"></div>
+      </div>
+    </div>
+    <div>
+      <div class="steps" id="pSteps"></div>
+      <div class="panel">
+        <div class="kicker" id="pKicker"></div>
+        <h3 id="pHead"></h3>
+        <p id="pBody"></p>
+      </div>
+      <div class="foot">The prototype does not claim to beat the competitor on every basket. On a single order without membership it does not, and the comparison panel in the cart says so rather than hiding it.</div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+/* ---------- economics ---------- */
+var OVERHEAD = 8, THEM_COST = 53, THEM_CHARGE = 49;
+function riderHourly(d){ return 100 + 20*d; }
+function costPer(d){ return riderHourly(d)/d + OVERHEAD; }
+var dens = document.getElementById("dens");
+function econ(){
+  var opr = +dens.value / 10, cost = costPer(opr), pay = riderHourly(opr);
+  document.getElementById("cpd").textContent = "৳" + Math.round(cost);
+  document.getElementById("rhr").textContent = "৳" + Math.round(pay);
+  document.getElementById("cpdCap").textContent =
+    "At " + opr.toFixed(1) + " drops per rider-hour. Rider is paid ৳" + Math.round(pay/opr) +
+    " for a delivery of this length — less per trip than a long one, but far more per hour.";
+  document.getElementById("barUs").style.width = Math.max(6, Math.min(100, (cost/95)*100)) + "%";
+  document.getElementById("barUsV").textContent = "৳" + Math.round(cost);
+  var v = document.getElementById("verdict");
+  if (cost > THEM_COST + 7){
+    v.className = "verdict bad";
+    v.innerHTML = "<b>৳" + Math.round(cost-THEM_COST) + " behind per delivery.</b> They are not being generous and they are not subsidising harder than us — they are denser. We recover the difference through platform and packaging fees, which is exactly what makes our total look worse at the last tap.";
+  } else if (cost > THEM_COST - 3){
+    v.className = "verdict ok";
+    v.innerHTML = "<b>Level.</b> At this density a delivery costs us about what it costs them, so a flat ৳40 to ৳45 in-zone fee works without a platform fee bolted on top — and the rider is earning ৳" + Math.round(pay) + " an hour, not less.";
+  } else {
+    v.className = "verdict ok";
+    v.innerHTML = "<b>৳" + Math.round(THEM_COST-cost) + " ahead per delivery.</b> At this density we hold margin at ৳40 while the rider earns ৳" + Math.round(pay) + " an hour — the only route to a lower price that comes out of deleted distance rather than someone's pay.";
+  }
+}
+dens.oninput = econ; econ();
+
+/* ---------- tabs ---------- */
+function tab(n){
+  [1,2,3].forEach(function(i){
+    document.getElementById("s"+i).classList.toggle("hide", i !== n);
+    document.getElementById("t"+i).setAttribute("aria-pressed", String(i === n));
+  });
+  window.scrollTo(0,0);
+}
+[1,2,3].forEach(function(i){ document.getElementById("t"+i).onclick = function(){ tab(i); }; });
+
+/* ---------- prototype ---------- */
+var FIX = false, plus = false, view = "home", freq = 6;
+var MENU = [
+  {id:"kacchi", nm:"Kacchi Biryani", ds:"Full plate · mutton", price:320, qty:1, ic:"🍛"},
+  {id:"borhani", nm:"Borhani",       ds:"Chilled · 250 ml",   price:60,  qty:1, ic:"🥛"},
+  {id:"tehari",  nm:"Beef Tehari",   ds:"Half plate",          price:180, qty:0, ic:"🍲"},
+  {id:"firni",   nm:"Firni",         ds:"Clay pot",            price:70,  qty:0, ic:"🍮"}
+];
+var DEL_NOW = 60, PLATFORM = 15, PACKAGING = 20, VATR = .05, PLUS_FEE = 149;
+var zoneDrops = 3.2;
+var TIERS = [
+  {min:4.0, fee:40, lab:"4.0+ drops per hour"},
+  {min:3.0, fee:45, lab:"3.0 \u2013 3.9 drops per hour"},
+  {min:2.0, fee:50, lab:"2.0 \u2013 2.9 drops per hour"},
+  {min:0,   fee:60, lab:"Under 2.0 drops per hour"}
+];
+function tier(){ for (var i=0;i<TIERS.length;i++){ if (zoneDrops >= TIERS[i].min) return TIERS[i]; } return TIERS[3]; }
+function DZ(){ return tier().fee; }
+function ordersWeek(){ return Math.round(zoneDrops * 265); }
+function tk(n){ return "৳" + Math.round(n).toLocaleString("en-US"); }
+function sub(){ return MENU.reduce(function(s,i){ return s + i.price*i.qty; },0); }
+function vat(){ return Math.round(sub()*VATR); }
+function total(){
+  return FIX ? sub() + (plus?0:DZ()) + PACKAGING + vat()
+             : sub() + DEL_NOW + PLATFORM + PACKAGING + vat();
+}
+function totalThem(){ return sub() + THEM_CHARGE + vat(); }
+
+var COPY = {
+  home:{ tNow:"All of Dhaka", sNow:"42 zones · delivery from ৳60",
+         tFix:"Dhanmondi &amp; Lalmatia", sFix:"2 zones · flat ৳40 delivery",
+    now:["Thin coverage, expensive delivery","We list restaurants across the whole city, so riders cover long distances and finish few drops an hour. That cost surfaces as a ৳60 delivery fee plus a platform fee, and the customer sees a total above the competitor’s."],
+    fix:["Fewer zones, stated on the home screen","Coverage is cut to two adjacent areas. The customer loses some restaurant choice and gains a flat ৳40 delivery fee that does not change with distance — because inside a tight zone, distance barely varies."]},
+  menu:{ tNow:"Kacchi Ghor", sNow:"4.6 ★ · 25–35 min · ৳60 delivery",
+         tFix:"Kacchi Ghor", sFix:"4.6 ★ · 20–30 min · ৳40 flat",
+    now:["Food price is competitive; the total is not","Our food prices match the competitor almost exactly. Nothing on this screen changes the outcome, because the gap is created after it."],
+    fix:["Same food price, shorter promise","Tighter zones also shorten delivery times, which is the second thing a customer notices. The running total already carries the flat fee."]},
+  cart:{ tNow:"Your order", sNow:"Kacchi Ghor · 25–35 min",
+         tFix:"Your order", sFix:"Kacchi Ghor · 20–30 min",
+    now:["Where the gap goes","Delivery, platform fee and packaging add ৳95 to a ৳380 basket. The competitor adds ৳49. That difference is not a pricing decision anyone made — it is our delivery cost, passed on."],
+    fix:["Still not the cheapest, and we say so","Flat delivery and no platform fee close most of the gap. On one order without membership we remain slightly above them, and the comparison panel shows it. Membership is what turns the comparison around."]},
+  checkout:{ tNow:"Confirm &amp; pay", sNow:"Cash on delivery",
+             tFix:"Confirm &amp; pay", sFix:"Cash on delivery",
+    now:["Nothing is hidden here — the number is simply higher","Both apps disclose fees at this step, so late disclosure is not our differentiator. Our problem is the size of the number, not its timing."],
+    fix:["Flat fee, repeated exactly","The total matches the cart because there is nothing left to add. The claim we can make is predictability, not victory on price."]},
+  zone:{ tNow:"Your area", sNow:"Priced by distance",
+         tFix:"Dhanmondi", sFix:"Zone fee &middot; updates weekly",
+    now:["Nothing a customer does changes their delivery fee","Delivery is priced per kilometre. A customer ordering four times a week and one ordering twice a year pay the same rate for the same distance, and neither is told that the fee could ever move."],
+    fix:["The one screen where the strategy is visible to the customer","The zone\u2019s delivery fee is set by how many drops a rider completes inside it. When the zone gets busier, the fee drops for everyone in it \u2014 not as a promotion, but because the deliveries genuinely cost less. Move the slider and watch the fee change; the cart and checkout recalculate from this number. This is what makes \u201corder from us again\u201d an honest ask instead of a marketing line."]},
+  plus:{ tNow:"Foodie Plus", sNow:"Not available",
+         tFix:"Foodie Plus", sFix:"Membership · cancel anytime",
+    now:["No membership, so no density","Without a subscription, ordering frequency stays low, riders stay idle between drops, and cost per delivery stays high. The missing membership is part of the cost problem, not only a retention problem."],
+    fix:["The membership is a density instrument","Free delivery drives repeat orders inside the two zones we serve. More orders in the same small area means more drops per rider-hour, which lowers our cost — which is what pays for the free delivery."]}
+};
+var ORDER = ["home","menu","cart","checkout","zone","plus"];
+var LABELS = {home:"Coverage", menu:"Restaurant", cart:"Cart", checkout:"Checkout", zone:"Your zone", plus:"Foodie Plus"};
+
+function render(){
+  var c = COPY[view];
+  document.getElementById("abTitle").innerHTML = FIX ? c.tFix : c.tNow;
+  document.getElementById("abSub").innerHTML   = FIX ? c.sFix : c.sNow;
+  document.getElementById("back").style.display = view === "home" ? "none" : "block";
+  var t = FIX ? c.fix : c.now;
+  document.getElementById("pKicker").textContent =
+    "Screen " + (ORDER.indexOf(view)+1) + " of 6 · " + (FIX ? "Zone-first Foodie" : "Foodie today");
+  document.getElementById("pHead").textContent = t[0];
+  document.getElementById("pBody").innerHTML = t.slice(1).join("</p><p>");
+
+  var st = document.getElementById("pSteps"); st.innerHTML = "";
+  ORDER.forEach(function(k){
+    var b = document.createElement("button");
+    b.textContent = LABELS[k];
+    b.setAttribute("aria-current", k === view ? "true" : "false");
+    b.onclick = function(){ view = k; render(); };
+    st.appendChild(b);
+  });
+  var sc = document.getElementById("screen");
+  sc.innerHTML = SCREENS[view](); sc.scrollTop = 0; bind();
+}
+
+var SCREENS = {
+  home:function(){
+    var all = [
+      {ic:"🍛",nm:"Kacchi Ghor",  z:"Dhanmondi", food:320, go:true},
+      {ic:"🍔",nm:"Burger Lab",   z:"Lalmatia",  food:260, go:false},
+      {ic:"🍜",nm:"Noodle House", z:"Uttara",    food:290, go:false},
+      {ic:"☕",nm:"Chai Adda",    z:"Dhanmondi", food:140, go:false}
+    ];
+    var h = FIX
+      ? '<div class="banner ok"><b>Flat ৳40 delivery inside your zone.</b> Fewer restaurants than before — these are the ones we reach in under 30 minutes.</div>'
+      : '<div class="banner note">Delivery from ৳60, varying by distance. Platform and packaging fees apply.</div>';
+    all.forEach(function(r){
+      var out = FIX && r.z === "Uttara", fee = FIX ? DZ() : DEL_NOW;
+      h += '<button class="rcard" ' + (r.go && !out ? 'data-go="menu"' : 'disabled style="opacity:.4"') + '>' +
+        '<div class="thumb">' + r.ic + '</div>' +
+        '<div><div class="nm">' + r.nm + '</div><div class="mt">' + r.z +
+          (out ? ' · outside your zone' : ' · ' + tk(fee) + ' delivery') + '</div></div>' +
+        '<div class="pr"><div class="big">' + tk(r.food) + '</div>' +
+        '<div class="tag2 ' + (FIX?"good":"fine") + '">' + (FIX?"flat fee":"+ fees") + '</div></div></button>';
+    });
+    return h;
+  },
+  menu:function(){
+    var h = "";
+    MENU.forEach(function(i){
+      h += '<div class="item"><div class="thumb">' + i.ic + '</div>' +
+        '<div><div class="nm">' + i.nm + '</div><div class="ds">' + i.ds + ' · ' + tk(i.price) + '</div></div>' +
+        '<div class="stepper"><button data-dec="' + i.id + '" aria-label="Remove one">−</button>' +
+        '<span class="q">' + i.qty + '</span><button data-inc="' + i.id + '" aria-label="Add one">+</button></div></div>';
+    });
+    h += '<div class="banner ' + (FIX?"ok":"note") + '"><b>' + tk(total()) + '</b> all-in — ' +
+      (FIX ? 'food, flat delivery, packaging and VAT.' : 'food, delivery, platform fee, packaging and VAT.') + '</div>';
+    h += '<button class="cta" data-go="cart">View order · ' + tk(total()) + '</button>';
+    return h;
+  },
+  cart:function(){
+    var h = "";
+    MENU.filter(function(i){return i.qty>0}).forEach(function(i){
+      h += '<div class="item"><div class="thumb">' + i.ic + '</div>' +
+        '<div><div class="nm">' + i.nm + '</div><div class="ds">' + tk(i.price) + ' each</div></div>' +
+        '<div class="stepper"><button data-dec="' + i.id + '" aria-label="Remove one">−</button>' +
+        '<span class="q">' + i.qty + '</span><button data-inc="' + i.id + '" aria-label="Add one">+</button></div></div>';
+    });
+    if (FIX){
+      h += '<div class="plusbox"><div class="hd"><div><div class="ttl">Foodie Plus</div>' +
+        '<div class="pz">' + tk(PLUS_FEE) + '/month · delivery free in your zone</div></div>' +
+        '<button class="toggle" id="plusToggle" aria-pressed="' + plus + '" aria-label="Toggle Foodie Plus"></button></div></div>';
+    }
+    h += '<div class="rows"><div class="row"><span>Items</span><span>' + tk(sub()) + '</span></div>';
+    if (FIX){
+      h += '<div class="row"><span>Delivery (flat, in zone)</span><span>' +
+        (plus ? '<span class="strike">' + tk(DZ()) + '</span>' + tk(0) : tk(DZ())) + '</span></div>';
+      h += '<div class="row"><span>Packaging</span><span>' + tk(PACKAGING) + '</span></div>';
+      h += '<div class="row"><span>VAT (5%)</span><span>' + tk(vat()) + '</span></div>';
+    } else {
+      h += '<div class="row"><span>Delivery</span><span>' + tk(DEL_NOW) + '</span></div>';
+      h += '<div class="row"><span>Platform fee</span><span>' + tk(PLATFORM) + '</span></div>';
+      h += '<div class="row"><span>Packaging</span><span>' + tk(PACKAGING) + '</span></div>';
+      h += '<div class="row"><span>VAT (5%)</span><span>' + tk(vat()) + '</span></div>';
+    }
+    h += '<div class="row total"><span>Total</span><span>' + tk(total()) + '</span></div>';
+    if (FIX && plus) h += '<div class="row saved"><span>Saved by membership</span><span>' + tk(DZ()) + '</span></div>';
+    h += '</div>';
+    var gap = total() - totalThem();
+    h += '<div class="vs"><div class="r"><span>Same basket on Foodpanda</span><span>' + tk(totalThem()) + '</span></div>' +
+      '<div class="r ' + (gap>0?"lose":"win") + '"><span>' + (gap>0?"We are more expensive by":"We are cheaper by") +
+      '</span><span>' + tk(Math.abs(gap)) + '</span></div></div>';
+    h += '<div class="banner ' + (gap>0?"note":"ok") + '">' +
+      (gap > 0
+        ? (FIX ? 'Honest position: on one order without membership we are still ' + tk(gap) + ' above them. Turn on Plus to see the comparison change.'
+               : 'The ' + tk(gap) + ' gap is our delivery cost passed through — not a pricing decision.')
+        : 'With membership the same basket is cheaper than the competitor, funded by lower cost per delivery rather than by discounting.') + '</div>';
+    h += '<button class="cta ' + (FIX?"accent":"") + '" data-go="checkout">Continue · ' + tk(total()) + '</button>';
+    if (FIX) h += '<button class="cta ghost" data-go="plus">How Plus pays for itself</button>';
+    return h;
+  },
+  checkout:function(){
+    var h = '<div class="rows"><div class="row"><span>Items</span><span>' + tk(sub()) + '</span></div>';
+    if (FIX){
+      h += '<div class="row"><span>Delivery (flat, in zone)</span><span>' + (plus?tk(0):tk(DZ())) + '</span></div>';
+      h += '<div class="row"><span>Packaging</span><span>' + tk(PACKAGING) + '</span></div>';
+      h += '<div class="row"><span>VAT (5%)</span><span>' + tk(vat()) + '</span></div>';
+      h += '<div class="row total"><span>Total</span><span>' + tk(total()) + '</span></div></div>';
+      h += '<div class="banner ok"><b>Same as your cart.</b> Flat fee, nothing added by distance.</div>';
+    } else {
+      h += '<div class="row"><span>Delivery</span><span>' + tk(DEL_NOW) + '</span></div>';
+      h += '<div class="row"><span>Platform fee</span><span>' + tk(PLATFORM) + '</span></div>';
+      h += '<div class="row"><span>Packaging</span><span>' + tk(PACKAGING) + '</span></div>';
+      h += '<div class="row"><span>VAT (5%)</span><span>' + tk(vat()) + '</span></div>';
+      h += '<div class="row total"><span>Total</span><span>' + tk(total()) + '</span></div></div>';
+      h += '<div class="banner bad"><b>' + tk(total()-totalThem()) + ' above the competitor on the same basket.</b> Both apps disclose at this step. Ours is simply the larger number.</div>';
+    }
+    h += '<button class="cta ' + (FIX?"accent":"") + '">Place order · ' + tk(total()) + '</button>';
+    return h;
+  },
+  zone:function(){
+    if (!FIX){
+      return '<div class="banner bad"><b>No zones today.</b> Delivery is priced per kilometre, so nothing a customer does moves it.</div>' +
+        '<div class="banner note">Because the fee is invisible to customer behaviour, there is no reason for anyone to order more often, and no reason the zone ever gets cheaper to serve. The loop never starts.</div>' +
+        '<button class="cta" id="switchFix">See the zone-first version</button>';
+    }
+    var t = tier(), nextUp = null;
+    for (var i=TIERS.length-1;i>=0;i--){ if (TIERS[i].min > zoneDrops){ nextUp = TIERS[i]; break; } }
+    var h = '<div class="zonehd"><div><div class="big">' + tk(t.fee) + '</div>' +
+      '<div class="cap">delivery, anywhere in Dhanmondi</div></div>' +
+      '<div style="text-align:right"><div class="big" style="font-size:19px">' + zoneDrops.toFixed(1) + '</div>' +
+      '<div class="cap">drops per rider-hour</div></div></div>';
+    h += '<div class="meter"><i style="width:' + Math.min(100, (zoneDrops/4.6)*100) + '%"></i></div>';
+    h += '<p style="font-size:13px;color:var(--muted);margin:14px 0 0">Zone activity (drag to see the effect)</p>';
+    h += '<input type="range" min="12" max="46" step="1" value="' + Math.round(zoneDrops*10) + '" id="zoneSlider" aria-label="Zone drops per rider-hour">';
+    TIERS.slice().reverse().forEach(function(x){
+      h += '<div class="tier' + (x.fee === t.fee ? " on" : "") + '"><span>' + x.lab + '</span><b>' + tk(x.fee) + '</b></div>';
+    });
+    h += '<div class="banner ' + (nextUp ? "note" : "ok") + '">' +
+      (nextUp
+        ? 'Dhanmondi is running about <b>' + ordersWeek().toLocaleString("en-US") + ' orders a week</b>. Around <b>' +
+          (Math.round(nextUp.min*265) - ordersWeek()).toLocaleString("en-US") +
+          ' more</b> takes the whole zone to ' + tk(nextUp.fee) + ' delivery.'
+        : '<b>Top tier reached.</b> Dhanmondi is dense enough that delivery here costs us less than the competitor pays for theirs.') + '</div>';
+    h += '<div class="banner ok">Your orders count toward this. That is not a slogan \u2014 the fee above is calculated from it.</div>';
+    h += '<button class="cta accent" data-go="cart">Back to my order</button>';
+    h += '<button class="cta ghost" data-go="plus">Or skip the fee entirely with Plus</button>';
+    return h;
+  },
+
+  plus:function(){
+    if (!FIX){
+      return '<div class="banner bad"><b>Not available today.</b> No membership, no loyalty tier.</div>' +
+        '<div class="banner note">Low repeat frequency keeps riders idle between drops, which keeps cost per delivery high — so the missing membership is part of the cost problem, not only a retention problem.</div>' +
+        '<button class="cta" id="switchFix">See the zone-first version</button>';
+    }
+    var per = DZ(), saved = per*freq, net = saved - PLUS_FEE;
+    var h = '<div class="plusbox"><div class="hd"><div><div class="ttl">Foodie Plus</div>' +
+      '<div class="pz">' + tk(PLUS_FEE) + ' per month · cancel anytime</div></div>' +
+      '<button class="toggle" id="plusToggle" aria-pressed="' + plus + '" aria-label="Toggle Foodie Plus"></button></div>' +
+      '<ul><li>Delivery free on every in-zone order</li><li>Saves ' + tk(per) + ' per order</li>' +
+      '<li>Priority during peak hours in your zone</li></ul></div>';
+    h += '<p style="font-size:13.5px;color:var(--muted);margin:18px 0 0">How often do you order in a month?</p>';
+    h += '<input type="range" min="1" max="20" value="' + freq + '" id="freq" aria-label="Orders per month">';
+    h += '<div class="breakeven"><span class="num">' + (net>=0 ? tk(net)+" saved" : tk(-net)+" short") + '</span>' +
+      'At ' + freq + ' order' + (freq===1?"":"s") + ' a month you avoid ' + tk(saved) + ' in delivery against ' +
+      tk(PLUS_FEE) + ' for membership. Break-even is ' + Math.ceil(PLUS_FEE/per) + ' orders.</div>';
+    h += '<div class="banner ok">Every extra order inside the zone also raises drops per rider-hour, which lowers what the delivery costs us. That is what funds the free delivery.</div>';
+    h += '<button class="cta accent" data-go="cart">Apply to my order</button>';
+    return h;
+  }
+};
+
+function find(id){ return MENU.filter(function(i){ return i.id === id; })[0]; }
+function bind(){
+  var sc = document.getElementById("screen");
+  sc.querySelectorAll("[data-go]").forEach(function(b){ b.onclick = function(){ view = b.getAttribute("data-go"); render(); }; });
+  sc.querySelectorAll("[data-inc]").forEach(function(b){ b.onclick = function(){ find(b.getAttribute("data-inc")).qty++; render(); }; });
+  sc.querySelectorAll("[data-dec]").forEach(function(b){ b.onclick = function(){ var i = find(b.getAttribute("data-dec")); if (i.qty>0) i.qty--; render(); }; });
+  var pt = document.getElementById("plusToggle"); if (pt) pt.onclick = function(){ plus = !plus; render(); };
+  var fr = document.getElementById("freq"); if (fr) fr.oninput = function(){ freq = +fr.value; render(); document.getElementById("freq").focus(); };
+  var zs = document.getElementById("zoneSlider"); if (zs) zs.oninput = function(){ zoneDrops = +zs.value/10; render(); document.getElementById("zoneSlider").focus(); };
+  var sf = document.getElementById("switchFix"); if (sf) sf.onclick = function(){ setMode(true); };
+}
+function setMode(on){
+  FIX = on; if (!on) plus = false;
+  document.getElementById("mBefore").setAttribute("aria-pressed", String(!on));
+  document.getElementById("mAfter").setAttribute("aria-pressed", String(on));
+  render();
+}
+document.getElementById("mBefore").onclick = function(){ setMode(false); };
+document.getElementById("mAfter").onclick  = function(){ setMode(true); };
+document.getElementById("back").onclick = function(){ view = ORDER[Math.max(0, ORDER.indexOf(view)-1)]; render(); };
+render();
+</script>
+</body>
+</html>
